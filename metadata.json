@@ -1,0 +1,7 @@
+{
+  "name": "HabitQuest AI",
+  "description": "An advanced AI-powered habit tracking application that uses Gemini 3 to analyze routines, provide personalized coaching, and visualize progress with intelligent insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
