@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Habit } from '../types';
 
 interface HabitCardProps {
@@ -10,113 +10,92 @@ interface HabitCardProps {
 }
 
 export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete, onRename }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(habit.name);
+  const [deleteStage, setDeleteStage] = useState(0); 
+  const timerRef = useRef<number | null>(null);
   
-  const today = new Date().toISOString().split('T')[0];
-  const isCompletedToday = habit.logs.some(l => l.date === today && l.completed);
-  const activeReminders = habit.reminders?.filter(r => r.enabled) || [];
+  // IST Date check
+  const today = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Kolkata', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  }).format(new Date());
 
-  const handleSave = () => {
-    if (editedName.trim()) {
-      onRename(habit.id, editedName.trim());
-      setIsEditing(false);
-    }
-  };
+  const logToday = habit.logs.find(l => l.date === today);
+  
+  // Logic: Completion is only valid if metric value >= 5 (or not a metric habit)
+  const isCompletedToday = !!logToday?.completed && (logToday.value === undefined || logToday.value >= 5);
+  const isFailedToday = logToday !== undefined && !isCompletedToday;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') {
-      setEditedName(habit.name);
-      setIsEditing(false);
+  useEffect(() => {
+    if (deleteStage > 0) {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => setDeleteStage(0), 3000);
     }
-  };
+    return () => { if (timerRef.current) window.clearTimeout(timerRef.current); };
+  }, [deleteStage]);
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 transition-all hover:shadow-md group relative flex flex-col">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center space-x-3 w-full mr-2 overflow-hidden">
-          <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 shadow-sm"
-            style={{ backgroundColor: habit.color }}
-          >
+    <div className={`bg-[#0d1117] rounded-[2rem] p-6 border transition-all duration-500 ${
+      isCompletedToday 
+        ? 'border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.1)]' 
+        : isFailedToday 
+          ? 'border-red-600/60 shadow-[0_0_20px_rgba(220,38,38,0.2)] bg-red-950/20'
+          : 'border-slate-800'
+    }`}>
+      <div className="flex justify-between items-start mb-5">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black shadow-lg ring-1 ring-white/10" style={{ backgroundColor: habit.color }}>
             {habit.name.charAt(0).toUpperCase()}
           </div>
-          
-          {isEditing ? (
-            <div className="flex-1 flex items-center space-x-2">
-              <input
-                autoFocus
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-full bg-slate-50 border border-indigo-300 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button 
-                onClick={handleSave}
-                className="text-green-600 hover:text-green-700 p-1"
-                title="Save"
-              >
-                <i className="fa-solid fa-check"></i>
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-hidden cursor-pointer group/name flex items-center space-x-2" onClick={() => setIsEditing(true)}>
-              <h3 className="font-semibold text-slate-800 truncate">{habit.name}</h3>
-              <i className="fa-solid fa-pen text-[10px] text-slate-300 opacity-0 group-hover/name:opacity-100 transition-opacity"></i>
-            </div>
-          )}
+          <div>
+            <h3 className="font-bold text-slate-100 tracking-tight text-lg">{habit.name}</h3>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{habit.category}</p>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-1 shrink-0">
-          {!isEditing && (
-            <button 
-              onClick={() => onDelete(habit.id)}
-              className="text-slate-300 hover:text-red-500 transition-colors p-1"
-              aria-label="Delete habit"
-            >
-              <i className="fa-solid fa-trash-can text-sm"></i>
-            </button>
-          )}
-        </div>
+        <button 
+          onClick={(e) => { e.stopPropagation(); deleteStage < 2 ? setDeleteStage(deleteStage + 1) : onDelete(habit.id); }}
+          className={`p-2 rounded-xl transition-all ${deleteStage === 0 ? 'text-slate-700 hover:text-red-500' : 'bg-red-600 text-white text-[10px] font-black'}`}
+        >
+          {deleteStage === 0 ? <i className="fa-solid fa-trash-can"></i> : deleteStage === 1 ? 'SURE?' : 'KILL'}
+        </button>
       </div>
       
-      <p className="text-sm text-slate-500 mb-4 line-clamp-2 min-h-[40px] italic">
-        {habit.category} • {habit.description}
+      <p className="text-xs text-slate-400 mb-6 italic leading-relaxed h-8 line-clamp-2">
+        {habit.description}
       </p>
 
-      {/* Reminders Row */}
-      {activeReminders.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {activeReminders.slice(0, 2).map(r => (
-            <div key={r.id} className="flex items-center space-x-1 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md">
-              <i className="fa-regular fa-clock text-[10px] text-indigo-500"></i>
-              <span className="text-[10px] font-medium text-slate-600">{r.time}</span>
-            </div>
-          ))}
+      {habit.isMetric && logToday && (
+        <div className={`mb-4 border p-3 rounded-xl flex justify-between items-center transition-colors duration-500 ${isFailedToday ? 'bg-red-600/30 border-red-500/40' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
+          <div className="flex flex-col">
+            <span className={`text-[10px] font-black uppercase ${isFailedToday ? 'text-red-400' : 'text-indigo-400'}`}>
+              {isFailedToday ? 'PROTOCOL STATUS: FAILED' : 'PROTOCOL STATUS: SUCCESS'}
+            </span>
+            {isFailedToday && <span className="text-[8px] text-red-400 font-bold uppercase tracking-tighter mt-0.5">Under 5h Limit</span>}
+          </div>
+          <span className={`text-sm font-black ${isFailedToday ? 'text-red-400' : 'text-white'}`}>
+            {logToday.value} Hours
+          </span>
         </div>
       )}
 
-      <div className="flex justify-between items-center mt-auto pt-2 border-t border-slate-50">
+      <div className="flex justify-between items-center pt-4 border-t border-white/5">
         <div className="flex items-center space-x-2">
-          <i className="fa-solid fa-fire text-orange-500"></i>
-          <span className="text-sm font-bold text-slate-700">{habit.streak}d</span>
+          <i className={`fa-solid fa-fire text-xs ${isCompletedToday ? 'text-orange-500' : 'text-slate-800'}`}></i>
+          <span className={`text-sm font-black ${isCompletedToday ? 'text-slate-100' : 'text-slate-600'}`}>{habit.streak}d</span>
         </div>
         <button
           onClick={() => onToggle(habit.id)}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
             isCompletedToday 
-            ? 'bg-green-50 text-green-600 border border-green-100' 
-            : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95'
+            ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
+            : isFailedToday
+              ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse ring-2 ring-red-500/50'
+              : 'bg-white/5 text-slate-400 hover:bg-white/10'
           }`}
         >
-          {isCompletedToday ? (
-            <span className="flex items-center space-x-1">
-              <i className="fa-solid fa-check"></i>
-              <span>Done</span>
-            </span>
-          ) : 'Complete'}
+          {isCompletedToday ? 'CONQUERED' : isFailedToday ? 'RE-ATTEMPT' : 'EXECUTE'}
         </button>
       </div>
     </div>

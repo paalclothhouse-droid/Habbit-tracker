@@ -8,6 +8,7 @@ export enum Frequency {
 export interface HabitLog {
   date: string;
   completed: boolean;
+  value?: number; // For sleep hours or study hours
   notes?: string;
 }
 
@@ -29,6 +30,8 @@ export interface Habit {
   reminders: Reminder[];
   createdAt: string;
   color: string;
+  isMetric?: boolean; // If true, it tracks numbers like hours
+  minValue?: number; // Logic for "increase but not decrease"
 }
 
 export interface UserProfile {
@@ -49,7 +52,7 @@ export interface AIInsight {
 
 export interface AIPrediction {
   projectedLevel: number;
-  successProbability: number; // 0-100
+  successProbability: number;
   nextMilestoneEstimate: string;
   summary: string;
 }
