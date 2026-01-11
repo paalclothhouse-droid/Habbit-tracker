@@ -198,7 +198,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                       onClick={() => setAuthMethod('phone')}
                       className={`pb-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-b-2 ${authMethod === 'phone' ? 'text-white border-indigo-500' : 'text-slate-600 border-transparent hover:text-slate-400'}`}
                     >
-                      Login or Sign up with Phone
+                      Mobile
                     </button>
                   </div>
 
@@ -227,7 +227,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                               onClick={() => { setView('forgot-password'); setResetSent(false); }}
                               className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest"
                             >
-                              Lost Credentials?
+                              Forgot Password?
                             </button>
                           )}
                         </div>
@@ -296,7 +296,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                         type="submit"
                         className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] active:scale-[0.98]"
                       >
-                        {otpSent ? 'Verify & Connect' : 'Request Access Code'}
+                        {otpSent ? 'Verify & Connect' : 'Request OTP'}
                       </button>
                     </form>
                   )}
@@ -350,7 +350,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   ) : (
                     <form onSubmit={handleForgotPassword} className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Identity</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email linked to account</label>
                         <div className="relative group">
                           <i className="fa-solid fa-user-shield absolute left-4 top-4 text-slate-600 group-focus-within:text-indigo-500 transition-colors"></i>
                           <input 
@@ -370,7 +370,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                         type="submit"
                         className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] active:scale-[0.98]"
                       >
-                        Transmit Recovery Signal
+                        Send Password Reset Link
                       </button>
 
                       <div className="text-center">
