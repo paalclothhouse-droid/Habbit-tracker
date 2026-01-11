@@ -32,7 +32,7 @@ export const getAIHabitInsights = async (habits: Habit[]): Promise<AIInsight> =>
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Analyze these habits and provide a powerful coaching insight: ${JSON.stringify(habitsSummary)}`,
+      contents: `Analyze these habits and provide a ruthless, tactical military-style insight. Be concise. Data: ${JSON.stringify(habitsSummary)}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -62,7 +62,7 @@ export const predictFutureResults = async (user: UserProfile, habits: Habit[]): 
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Predict user progress in 30 days: ${JSON.stringify({user, history})}`,
+      contents: `Predict user progress in 30 days based on data. Use futuristic terms like 'Sync Rate', 'Optimization'. Data: ${JSON.stringify({user, history})}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -88,10 +88,10 @@ export const getMentorMotivation = async (user: UserProfile, habits: Habit[], pr
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `You are Aura. Harsh truth. Max 12 words. No fluff. Context: ${JSON.stringify(context)}.`,
-      config: { temperature: 1.0 }
+      contents: `You are a futuristic AI commander. Speak in short, cryptic, motivating bursts. Max 15 words. Context: ${JSON.stringify(context)}.`,
+      config: { temperature: 0.8 }
     });
-    return response.text?.replace(/["']/g, "") || "The path is narrow. Walk it.";
+    return response.text?.replace(/["']/g, "") || "SYSTEM OPTIMAL. CONTINUE.";
   });
 };
 
@@ -102,7 +102,7 @@ export const suggestNewHabit = async (goals: string): Promise<Partial<Habit>> =>
       model: 'gemini-3-flash-preview',
       contents: `Goal: "${goals}". 
       NAME RULE: Use the EXACT word provided (e.g. "Running"). NO FLUFF.
-      Return JSON.`,
+      Return JSON. Color should be a hex code for a neon/tech color.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -118,5 +118,17 @@ export const suggestNewHabit = async (goals: string): Promise<Partial<Habit>> =>
       }
     });
     return JSON.parse(response.text);
+  });
+};
+
+export const askOracle = async (query: string, userContext: any): Promise<string> => {
+  // Keeping this for compatibility but switching tone
+  return withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `You are Aura, a futuristic AI assistant. Answer this query with logic and precision. Keep it concise. Query: "${query}". Context: ${JSON.stringify(userContext)}`,
+    });
+    return response.text;
   });
 };

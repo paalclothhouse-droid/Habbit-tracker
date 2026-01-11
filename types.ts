@@ -37,6 +37,8 @@ export interface Habit {
 export interface UserProfile {
   id: string;
   name: string;
+  email?: string;
+  avatarUrl?: string;
   xp: number;
   level: number;
   joinedAt: string;

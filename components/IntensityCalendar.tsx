@@ -35,57 +35,52 @@ export const IntensityCalendar: React.FC<IntensityCalendarProps> = ({ habits }) 
   const days = Array.from({ length: getDaysInMonth() }, (_, i) => i);
 
   return (
-    <div className="bg-[#0d1117] rounded-[2rem] p-8 border border-slate-800 shadow-2xl">
-      <div className="flex justify-between items-center mb-8">
-        <h3 className="font-black text-white/40 text-[10px] uppercase tracking-[0.4em] flex items-center space-x-3">
-          <i className="fa-solid fa-calendar-check text-indigo-500"></i>
-          <span>Discipline Heatmap (IST)</span>
+    <div className="bg-[#0b101a] rounded-[2rem] p-8 border border-slate-800/60 shadow-xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-[50px] pointer-events-none"></div>
+      
+      <div className="flex justify-between items-center mb-8 relative z-10">
+        <h3 className="font-black text-slate-500 text-[10px] uppercase tracking-[0.4em] flex items-center space-x-3">
+          <i className="fa-solid fa-layer-group text-indigo-500"></i>
+          <span>Consistency Grid</span>
         </h3>
-        <span className="text-[10px] font-black text-slate-700 font-mono">
-          {new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase()}
+        <span className="text-[10px] font-bold text-slate-600 font-mono">
+          {new Date().toLocaleString('default', { month: 'short', year: 'numeric' }).toUpperCase()}
         </span>
       </div>
       
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-3 relative z-10">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-          <div key={d} className="text-[9px] font-black text-slate-800 text-center mb-2">{d}</div>
+          <div key={d} className="text-[9px] font-bold text-slate-700 text-center mb-2">{d}</div>
         ))}
         {days.map(day => {
           const intensity = getIntensity(day);
           return (
             <div 
               key={day}
-              className="aspect-square rounded-xl border border-white/5 transition-all duration-700 relative group overflow-hidden"
+              className="aspect-square rounded-lg border border-slate-800/50 transition-all duration-300 relative group overflow-hidden"
               style={{ 
                 backgroundColor: intensity > 0 
-                  ? `rgba(79, 70, 229, ${0.1 + intensity * 0.9})` 
-                  : 'rgba(255, 255, 255, 0.02)' 
+                  ? `rgba(99, 102, 241, ${0.1 + intensity * 0.5})` 
+                  : 'transparent' 
               }}
             >
-              {intensity === 1 && (
-                <div className="absolute inset-0 bg-indigo-400/10 animate-pulse"></div>
-              )}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm">
-                <span className="text-[10px] font-black text-white">{day + 1}</span>
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 backdrop-blur-sm">
+                <span className="text-[10px] font-bold text-white">{day + 1}</span>
               </div>
             </div>
           );
         })}
       </div>
       
-      <div className="mt-10 flex items-center justify-between px-2 pt-6 border-t border-white/5">
+      <div className="mt-10 flex items-center justify-between px-2 pt-6 border-t border-slate-800/50 relative z-10">
         <div className="flex items-center space-x-3">
-          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Ghost</span>
+          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Idle</span>
           <div className="flex space-x-1.5">
-            {[0.1, 0.3, 0.5, 0.7, 0.9].map(lvl => (
-              <div key={lvl} className="w-3.5 h-3.5 rounded-[4px] ring-1 ring-white/5" style={{ backgroundColor: `rgba(99, 102, 241, ${lvl})` }}></div>
+            {[0.2, 0.4, 0.6, 0.8, 1].map(lvl => (
+              <div key={lvl} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: `rgba(99, 102, 241, ${lvl})` }}></div>
             ))}
           </div>
-          <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Hardened</span>
-        </div>
-        <div className="flex items-center space-x-2">
-           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-           <span className="text-[9px] font-black text-slate-500 uppercase">Delhi Synced</span>
+          <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Max</span>
         </div>
       </div>
     </div>

@@ -6,12 +6,12 @@ import { AIPanel } from './components/AIPanel';
 import { AIMentor } from './components/AIMentor';
 import { PredictiveCard } from './components/PredictiveCard';
 import { IntensityCalendar } from './components/IntensityCalendar';
-import { getAIHabitInsights, suggestNewHabit, getMentorMotivation, predictFutureResults } from './services/geminiService';
+import { AuthScreen } from './components/AuthScreen';
+import { getAIHabitInsights, suggestNewHabit, getMentorMotivation, predictFutureResults, askOracle } from './services/geminiService';
 
 const STORAGE_KEYS = {
   HABITS: 'hq_habits_v9',
   USER: 'hq_user_v9',
-  TOKEN: 'hq_session_token_v9'
 };
 
 // Helper to get current date in Delhi Timezone
@@ -27,49 +27,41 @@ const getDelhiDate = () => {
 const INITIAL_HABITS: Habit[] = [
   {
     id: 'sleep-1',
-    name: 'Sleep',
-    description: 'Biological reset. < 5h = FAILURE.',
-    category: 'Bio-Sync',
+    name: 'Sleep Protocol',
+    description: 'Maintain biological runtime efficiency. < 5h = FAILURE.',
+    category: 'Health',
     frequency: Frequency.DAILY,
     streak: 0,
     logs: [],
     reminders: [],
     createdAt: new Date().toISOString(),
-    color: '#3b82f6',
+    color: '#6366f1',
     isMetric: true
   },
   {
     id: 'study-1',
-    name: 'Study',
-    description: 'Cognitive load. < 5h = FAILURE.',
-    category: 'Cognitive',
+    name: 'Neural Upload',
+    description: 'Expand cognitive database. < 5h = STAGNATION.',
+    category: 'Growth',
     frequency: Frequency.DAILY,
     streak: 0,
     logs: [],
     reminders: [],
     createdAt: new Date().toISOString(),
-    color: '#a855f7',
+    color: '#8b5cf6',
     isMetric: true
   }
 ];
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER);
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [habits, setHabits] = useState<Habit[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.HABITS);
     return saved ? JSON.parse(saved) : INITIAL_HABITS;
-  });
-
-  const [user, setUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER);
-    if (saved) return JSON.parse(saved);
-    return {
-      id: 'aura_' + Math.random().toString(36).substr(2, 15),
-      name: 'Void Walker',
-      xp: 0,
-      level: 1,
-      joinedAt: new Date().toISOString(),
-      streakFreezes: 1
-    };
   });
   
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
@@ -84,9 +76,16 @@ const App: React.FC = () => {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [apiStatus, setApiStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
+  // Oracle Chat State (Keep state but hide UI in this version)
+  const [oracleQuery, setOracleQuery] = useState('');
+  const [oracleResponse, setOracleResponse] = useState('');
+  const [isOracleThinking, setIsOracleThinking] = useState(false);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    }
   }, [habits, user]);
 
   const calculateStreak = (logs: {date: string, completed: boolean, value?: number}[]) => {
@@ -96,7 +95,6 @@ const App: React.FC = () => {
     );
     let streak = 0;
     let checkDate = new Date();
-    // Use Delhi date for streak calculation
     let checkDateStr = getDelhiDate();
     
     if (!completedDates.has(checkDateStr)) {
@@ -133,6 +131,7 @@ const App: React.FC = () => {
     }));
 
     setUser(prev => {
+      if (!prev) return null;
       const newXp = Math.max(0, prev.xp + xpGained);
       const newLevel = Math.floor(newXp / 500) + 1;
       return { ...prev, xp: newXp, level: newLevel };
@@ -141,7 +140,7 @@ const App: React.FC = () => {
   };
 
   const fetchInsightsAndPredictions = useCallback(async () => {
-    if (habits.length === 0) return;
+    if (habits.length === 0 || !user) return;
     setIsAiLoading(true);
     setIsPredicting(true);
     setApiStatus('loading');
@@ -160,6 +159,7 @@ const App: React.FC = () => {
   }, [habits, user]);
 
   const handleConsultMentor = async () => {
+    if (!user) return;
     setIsMentorLoading(true);
     try {
       const msg = await getMentorMotivation(user, habits, prediction || undefined);
@@ -168,36 +168,76 @@ const App: React.FC = () => {
     finally { setIsMentorLoading(false); }
   };
 
+  const handleAskOracle = async () => {
+    if (!oracleQuery.trim()) return;
+    setIsOracleThinking(true);
+    setOracleResponse('');
+    try {
+      const resp = await askOracle(oracleQuery, { user, habits });
+      setOracleResponse(resp);
+    } catch (err) {
+      setOracleResponse("UPLINK FAILED.");
+    } finally {
+      setIsOracleThinking(false);
+    }
+  };
+
   useEffect(() => {
-    fetchInsightsAndPredictions();
-    if (!mentorMessage) handleConsultMentor();
-  }, [fetchInsightsAndPredictions]);
+    if (user) {
+      fetchInsightsAndPredictions();
+      if (!mentorMessage) handleConsultMentor();
+    }
+  }, [fetchInsightsAndPredictions, user]); 
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+  };
+
+  if (!user) {
+    return <AuthScreen onAuthenticated={(u) => setUser(u)} />;
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div className="flex items-center space-x-5">
-          <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl ring-1 ring-white/10">
-            {user.level}
+        <div className="flex items-center space-x-6">
+          <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-white text-3xl font-black shadow-2xl ring-1 ring-white/10 overflow-hidden relative">
+             <i className="fa-solid fa-user-astronaut"></i>
+             <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-transparent"></div>
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-[0.2em]">Live Session (IST)</span>
-              {apiStatus === 'error' && <span className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-0.5 rounded uppercase tracking-[0.2em]">Quota Limit</span>}
+              <span className="text-[9px] font-black text-emerald-500 bg-emerald-950/30 px-2 py-0.5 rounded uppercase tracking-[0.2em] border border-emerald-500/20">Delhi Synced</span>
+              {apiStatus === 'error' && <span className="text-[9px] font-black text-red-500 bg-red-950/30 px-2 py-0.5 rounded uppercase tracking-[0.2em]">Connection Lost</span>}
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tighter uppercase">
-              Phase {user.level} <span className="text-indigo-400 font-medium text-xl ml-2">{user.name}</span>
+            <h1 className="text-3xl font-black text-white tracking-tighter uppercase mt-1">
+              Ghost <span className="text-indigo-500">Hardened</span>
             </h1>
-            <div className="flex items-center space-x-3 mt-2 w-56 md:w-72">
-              <div className="flex-1 h-2 bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${(user.xp % 500) / 5}%` }}></div>
+            <div className="flex items-center space-x-3 mt-3 w-56 md:w-72">
+              <span className="text-[10px] font-bold text-slate-500 w-8">LVL {user.level}</span>
+              <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{ width: `${(user.xp % 500) / 5}%` }}></div>
               </div>
             </div>
           </div>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-500 transition-all ring-1 ring-white/10">
-          Inject Protocol
-        </button>
+        
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={handleLogout}
+            className="w-12 h-12 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all border border-slate-700"
+            title="Disconnect"
+          >
+            <i className="fa-solid fa-power-off"></i>
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-white text-black px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+          >
+            Initialize
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -219,23 +259,53 @@ const App: React.FC = () => {
           <AIMentor user={user} habits={habits} loading={isMentorLoading} message={mentorMessage} onConsult={handleConsultMentor} />
           <PredictiveCard prediction={prediction} loading={isPredicting} />
           <AIPanel insight={aiInsight} loading={isAiLoading} onRefresh={fetchInsightsAndPredictions} />
+          
+          {/* Oracle Chat - Styled futuristically but hidden by default or collapsed could be an option. For now, showing it as a 'Command Line' if user really wants it, but standard layout usually has this removed or different. I will keep it simple. */}
+          <div className="bg-[#0b101a] border border-slate-800/60 p-6 rounded-[2rem]">
+             <div className="flex items-center space-x-3 mb-4">
+                <i className="fa-solid fa-terminal text-indigo-500"></i>
+                <h3 className="text-slate-500 font-bold uppercase tracking-widest text-xs">Command Line</h3>
+             </div>
+             <div className="flex gap-2">
+               <input 
+                 value={oracleQuery} 
+                 onChange={(e) => setOracleQuery(e.target.value)} 
+                 onKeyDown={(e) => e.key === 'Enter' && handleAskOracle()}
+                 className="flex-1 bg-black border border-slate-800 text-slate-300 text-xs p-3 rounded-lg focus:outline-none focus:border-indigo-500 font-mono" 
+                 placeholder="Query Aura..." 
+               />
+               <button 
+                 onClick={handleAskOracle} 
+                 disabled={isOracleThinking}
+                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold uppercase text-xs transition-colors disabled:opacity-50"
+               >
+                 {isOracleThinking ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Run'}
+               </button>
+             </div>
+             {oracleResponse && (
+               <div className="mt-4 p-4 bg-slate-900 border border-slate-800 rounded-lg">
+                 <p className="text-xs text-indigo-300 leading-relaxed font-mono">>> {oracleResponse}</p>
+               </div>
+             )}
+          </div>
+
         </div>
       </div>
 
       {/* Hour Selection Modal */}
       {selectionModal && selectionModal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={() => setSelectionModal(null)}></div>
-          <div className="relative bg-[#0d1117] w-full max-w-sm rounded-[2.5rem] p-10 border border-slate-800 shadow-2xl text-center">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setSelectionModal(null)}></div>
+          <div className="relative bg-[#05070a] w-full max-w-sm rounded-[2.5rem] p-10 border border-slate-800 shadow-2xl text-center">
             <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">{selectionModal.name}</h2>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-10">Select Duration (IST Session)</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-10">Select Duration (IST)</p>
             
             <div className="grid grid-cols-2 gap-4 mb-8">
               {[5, 6, 8, 11].map(hr => (
                 <button
                   key={hr}
                   onClick={() => handleToggleHabit(selectionModal.habitId, hr)}
-                  className="bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/30 text-white py-6 rounded-2xl font-black text-xl transition-all"
+                  className="bg-slate-900 hover:bg-indigo-600 border border-slate-800 text-slate-300 hover:text-white py-6 rounded-2xl font-black text-xl transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:border-transparent"
                 >
                   {hr}h
                 </button>
@@ -244,9 +314,9 @@ const App: React.FC = () => {
 
             <button
               onClick={() => handleToggleHabit(selectionModal.habitId, 0)}
-              className="w-full bg-red-600 hover:bg-red-500 text-white py-5 rounded-2xl font-black uppercase tracking-[0.3em] shadow-lg shadow-red-900/20 transition-all border border-red-500/50"
+              className="w-full bg-red-950/30 hover:bg-red-900/50 text-red-500 hover:text-red-400 py-5 rounded-2xl font-black uppercase tracking-[0.3em] transition-all border border-red-900/30"
             >
-              0 (Protocol Failed)
+              0 (Fail)
             </button>
           </div>
         </div>
@@ -254,15 +324,15 @@ const App: React.FC = () => {
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={() => setShowAddModal(false)}></div>
-          <div className="relative bg-[#0d1117] w-full max-w-lg rounded-[2.5rem] p-10 border border-slate-800 shadow-2xl">
-            <h2 className="text-3xl font-black text-white tracking-tighter uppercase mb-2">New Target</h2>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-8">Direct Name Only (e.g. Running)</p>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setShowAddModal(false)}></div>
+          <div className="relative bg-[#05070a] w-full max-w-lg rounded-[2.5rem] p-10 border border-slate-800 shadow-2xl">
+            <h2 className="text-3xl font-black text-white tracking-tighter uppercase mb-2">Initialize</h2>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-8">Define Protocol (e.g. Meditation)</p>
             <textarea 
               value={newHabitGoal}
               onChange={(e) => setNewHabitGoal(e.target.value)}
-              placeholder="e.g. Running"
-              className="w-full bg-black/40 border border-slate-800 rounded-2xl p-6 text-white mb-8 focus:ring-2 focus:ring-indigo-500 h-24 outline-none transition-all"
+              placeholder="e.g. Meditation"
+              className="w-full bg-black border border-slate-800 rounded-2xl p-6 text-white mb-8 focus:ring-1 focus:ring-indigo-500 h-24 outline-none transition-all placeholder-slate-700"
             />
             <button
               disabled={isSuggesting}
@@ -285,9 +355,9 @@ const App: React.FC = () => {
                   setNewHabitGoal('');
                 } finally { setIsSuggesting(false); }
               }}
-              className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.3em] shadow-xl disabled:opacity-50"
+              className="w-full bg-white hover:bg-slate-200 text-black py-5 rounded-2xl font-black uppercase tracking-[0.3em] shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 transition-all"
             >
-              {isSuggesting ? 'Analyzing...' : 'Finalize Protocol'}
+              {isSuggesting ? 'Processing...' : 'Engage'}
             </button>
           </div>
         </div>

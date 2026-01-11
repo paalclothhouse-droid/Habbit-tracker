@@ -36,66 +36,65 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete,
   }, [deleteStage]);
 
   return (
-    <div className={`bg-[#0d1117] rounded-[2rem] p-6 border transition-all duration-500 ${
+    <div className={`rounded-[2rem] p-6 border transition-all duration-500 relative overflow-hidden group ${
       isCompletedToday 
-        ? 'border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.1)]' 
+        ? 'bg-[#0f172a] border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' 
         : isFailedToday 
-          ? 'border-red-600/60 shadow-[0_0_20px_rgba(220,38,38,0.2)] bg-red-950/20'
-          : 'border-slate-800'
+          ? 'bg-[#1a0505] border-red-900/60 shadow-[0_0_20px_rgba(153,27,27,0.2)]'
+          : 'bg-[#0b101a] border-slate-800/60 hover:border-indigo-500/40'
     }`}>
-      <div className="flex justify-between items-start mb-5">
+      <div className="flex justify-between items-start mb-5 relative z-10">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black shadow-lg ring-1 ring-white/10" style={{ backgroundColor: habit.color }}>
-            {habit.name.charAt(0).toUpperCase()}
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black shadow-lg ring-1 ring-white/5" style={{ background: habit.color || '#4f46e5' }}>
+            <span className="text-lg">{habit.name.charAt(0)}</span>
           </div>
           <div>
-            <h3 className="font-bold text-slate-100 tracking-tight text-lg">{habit.name}</h3>
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{habit.category}</p>
+            <h3 className="font-bold text-white tracking-tight text-lg">{habit.name}</h3>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{habit.category}</p>
           </div>
         </div>
         
         <button 
           onClick={(e) => { e.stopPropagation(); deleteStage < 2 ? setDeleteStage(deleteStage + 1) : onDelete(habit.id); }}
-          className={`p-2 rounded-xl transition-all ${deleteStage === 0 ? 'text-slate-700 hover:text-red-500' : 'bg-red-600 text-white text-[10px] font-black'}`}
+          className={`p-2 rounded-xl transition-all ${deleteStage === 0 ? 'text-slate-700 hover:text-red-500' : 'bg-red-900/80 text-white text-[10px] font-black'}`}
         >
-          {deleteStage === 0 ? <i className="fa-solid fa-trash-can"></i> : deleteStage === 1 ? 'SURE?' : 'KILL'}
+          {deleteStage === 0 ? <i className="fa-solid fa-trash-can"></i> : deleteStage === 1 ? 'DEL?' : 'CONFIRM'}
         </button>
       </div>
       
-      <p className="text-xs text-slate-400 mb-6 italic leading-relaxed h-8 line-clamp-2">
+      <p className="text-xs text-slate-400 mb-6 leading-relaxed h-8 line-clamp-2 relative z-10">
         {habit.description}
       </p>
 
       {habit.isMetric && logToday && (
-        <div className={`mb-4 border p-3 rounded-xl flex justify-between items-center transition-colors duration-500 ${isFailedToday ? 'bg-red-600/30 border-red-500/40' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
+        <div className={`mb-4 border p-3 rounded-xl flex justify-between items-center transition-colors duration-500 relative z-10 ${isFailedToday ? 'bg-red-950/30 border-red-900/30' : 'bg-slate-900/50 border-slate-800'}`}>
           <div className="flex flex-col">
-            <span className={`text-[10px] font-black uppercase ${isFailedToday ? 'text-red-400' : 'text-indigo-400'}`}>
-              {isFailedToday ? 'PROTOCOL STATUS: FAILED' : 'PROTOCOL STATUS: SUCCESS'}
+            <span className={`text-[9px] font-black uppercase tracking-widest ${isFailedToday ? 'text-red-500' : 'text-emerald-500'}`}>
+              {isFailedToday ? 'THRESHOLD MISSED' : 'TARGET MET'}
             </span>
-            {isFailedToday && <span className="text-[8px] text-red-400 font-bold uppercase tracking-tighter mt-0.5">Under 5h Limit</span>}
           </div>
-          <span className={`text-sm font-black ${isFailedToday ? 'text-red-400' : 'text-white'}`}>
+          <span className={`text-sm font-black ${isFailedToday ? 'text-red-400' : 'text-emerald-400'}`}>
             {logToday.value} Hours
           </span>
         </div>
       )}
 
-      <div className="flex justify-between items-center pt-4 border-t border-white/5">
+      <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 relative z-10">
         <div className="flex items-center space-x-2">
-          <i className={`fa-solid fa-fire text-xs ${isCompletedToday ? 'text-orange-500' : 'text-slate-800'}`}></i>
-          <span className={`text-sm font-black ${isCompletedToday ? 'text-slate-100' : 'text-slate-600'}`}>{habit.streak}d</span>
+          <i className={`fa-solid fa-bolt text-xs ${isCompletedToday ? 'text-emerald-400' : 'text-slate-600'}`}></i>
+          <span className={`text-sm font-black ${isCompletedToday ? 'text-emerald-400' : 'text-slate-500'}`}>{habit.streak} Days</span>
         </div>
         <button
           onClick={() => onToggle(habit.id)}
-          className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${
             isCompletedToday 
-            ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
+            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
             : isFailedToday
-              ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse ring-2 ring-red-500/50'
-              : 'bg-white/5 text-slate-400 hover:bg-white/10'
+              ? 'bg-red-900/20 border-red-600 text-red-200'
+              : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
           }`}
         >
-          {isCompletedToday ? 'CONQUERED' : isFailedToday ? 'RE-ATTEMPT' : 'EXECUTE'}
+          {isCompletedToday ? 'COMPLETE' : isFailedToday ? 'FAILED' : 'LOG'}
         </button>
       </div>
     </div>
