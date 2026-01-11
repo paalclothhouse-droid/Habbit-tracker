@@ -16,7 +16,6 @@ export const IntensityCalendar: React.FC<IntensityCalendarProps> = ({ habits }) 
     const now = new Date();
     const dateObj = new Date(now.getFullYear(), now.getMonth(), dayIndex + 1);
     const dateStr = new Intl.DateTimeFormat('en-CA', { 
-      timeZone: 'Asia/Kolkata', 
       year: 'numeric', 
       month: '2-digit', 
       day: '2-digit' 

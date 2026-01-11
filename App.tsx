@@ -7,6 +7,7 @@ import { AIMentor } from './components/AIMentor';
 import { PredictiveCard } from './components/PredictiveCard';
 import { IntensityCalendar } from './components/IntensityCalendar';
 import { AuthScreen } from './components/AuthScreen';
+import { ProgressReport } from './components/ProgressReport';
 import { getAIHabitInsights, suggestNewHabit, getMentorMotivation, predictFutureResults, askOracle } from './services/geminiService';
 
 const STORAGE_KEYS = {
@@ -14,10 +15,9 @@ const STORAGE_KEYS = {
   USER: 'hq_user_v9',
 };
 
-// Helper to get current date in Delhi Timezone
-const getDelhiDate = () => {
+// Helper to get current date in Local Timezone
+const getCurrentDate = () => {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
@@ -42,7 +42,7 @@ const INITIAL_HABITS: Habit[] = [
     id: 'study-1',
     name: 'Neural Upload',
     description: 'Expand cognitive database. < 5h = STAGNATION.',
-    category: 'Growth',
+    category: 'Study',
     frequency: Frequency.DAILY,
     streak: 0,
     logs: [],
@@ -95,22 +95,22 @@ const App: React.FC = () => {
     );
     let streak = 0;
     let checkDate = new Date();
-    let checkDateStr = getDelhiDate();
+    let checkDateStr = getCurrentDate();
     
     if (!completedDates.has(checkDateStr)) {
       checkDate.setDate(checkDate.getDate() - 1);
-      checkDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(checkDate);
+      checkDateStr = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(checkDate);
     }
     while (completedDates.has(checkDateStr)) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
-      checkDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(checkDate);
+      checkDateStr = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(checkDate);
     }
     return streak;
   };
 
   const handleToggleHabit = (id: string, value: number) => {
-    const today = getDelhiDate();
+    const today = getCurrentDate();
     let xpGained = 0;
 
     setHabits(prev => prev.map(habit => {
@@ -208,7 +208,6 @@ const App: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[9px] font-black text-emerald-500 bg-emerald-950/30 px-2 py-0.5 rounded uppercase tracking-[0.2em] border border-emerald-500/20">Delhi Synced</span>
               {apiStatus === 'error' && <span className="text-[9px] font-black text-red-500 bg-red-950/30 px-2 py-0.5 rounded uppercase tracking-[0.2em]">Connection Lost</span>}
             </div>
             <h1 className="text-3xl font-black text-white tracking-tighter uppercase mt-1">
@@ -242,6 +241,9 @@ const App: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
+          {/* New Progress Report Component */}
+          <ProgressReport habits={habits} />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {habits.map(habit => (
               <HabitCard 
@@ -260,7 +262,6 @@ const App: React.FC = () => {
           <PredictiveCard prediction={prediction} loading={isPredicting} />
           <AIPanel insight={aiInsight} loading={isAiLoading} onRefresh={fetchInsightsAndPredictions} />
           
-          {/* Oracle Chat - Styled futuristically but hidden by default or collapsed could be an option. For now, showing it as a 'Command Line' if user really wants it, but standard layout usually has this removed or different. I will keep it simple. */}
           <div className="bg-[#0b101a] border border-slate-800/60 p-6 rounded-[2rem]">
              <div className="flex items-center space-x-3 mb-4">
                 <i className="fa-solid fa-terminal text-indigo-500"></i>
@@ -298,7 +299,7 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setSelectionModal(null)}></div>
           <div className="relative bg-[#05070a] w-full max-w-sm rounded-[2.5rem] p-10 border border-slate-800 shadow-2xl text-center">
             <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">{selectionModal.name}</h2>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-10">Select Duration (IST)</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-10">Select Duration</p>
             
             <div className="grid grid-cols-2 gap-4 mb-8">
               {[5, 6, 8, 11].map(hr => (

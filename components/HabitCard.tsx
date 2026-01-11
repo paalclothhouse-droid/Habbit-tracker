@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Habit } from '../types';
+import { HabitTimer } from './HabitTimer';
 
 interface HabitCardProps {
   habit: Habit;
@@ -11,11 +12,14 @@ interface HabitCardProps {
 
 export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete, onRename }) => {
   const [deleteStage, setDeleteStage] = useState(0); 
+  const [showTimer, setShowTimer] = useState(false);
   const timerRef = useRef<number | null>(null);
   
-  // IST Date check
+  // Check if habit is related to study/practice/test
+  const isFocusHabit = /study|practice|test|code|learn|work/i.test(habit.name) || /study|practice|test/i.test(habit.category);
+
+  // Local Date check (YYYY-MM-DD for log matching)
   const today = new Intl.DateTimeFormat('en-CA', { 
-    timeZone: 'Asia/Kolkata', 
     year: 'numeric', 
     month: '2-digit', 
     day: '2-digit' 
@@ -76,6 +80,24 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete,
           <span className={`text-sm font-black ${isFailedToday ? 'text-red-400' : 'text-emerald-400'}`}>
             {logToday.value} Hours
           </span>
+        </div>
+      )}
+
+      {/* Focus Timer Trigger */}
+      {isFocusHabit && !showTimer && !isCompletedToday && !isFailedToday && (
+        <button 
+          onClick={() => setShowTimer(true)}
+          className="w-full mb-4 py-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl text-indigo-300 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-900/30 transition-all flex items-center justify-center space-x-2"
+        >
+          <i className="fa-solid fa-stopwatch"></i>
+          <span>Initialize Timer</span>
+        </button>
+      )}
+
+      {/* The Actual Timer Component */}
+      {showTimer && (
+        <div className="mb-4">
+          <HabitTimer habitName={habit.name} />
         </div>
       )}
 
