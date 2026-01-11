@@ -15,9 +15,6 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete,
   const [showTimer, setShowTimer] = useState(false);
   const timerRef = useRef<number | null>(null);
   
-  // Check if habit is related to study/practice/test
-  const isFocusHabit = /study|practice|test|code|learn|work/i.test(habit.name) || /study|practice|test/i.test(habit.category);
-
   // Local Date check (YYYY-MM-DD for log matching)
   const today = new Intl.DateTimeFormat('en-CA', { 
     year: 'numeric', 
@@ -58,12 +55,25 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete,
           </div>
         </div>
         
-        <button 
-          onClick={(e) => { e.stopPropagation(); deleteStage < 2 ? setDeleteStage(deleteStage + 1) : onDelete(habit.id); }}
-          className={`p-2 rounded-xl transition-all ${deleteStage === 0 ? 'text-slate-700 hover:text-red-500' : 'bg-red-900/80 text-white text-[10px] font-black'}`}
-        >
-          {deleteStage === 0 ? <i className="fa-solid fa-trash-can"></i> : deleteStage === 1 ? 'DEL?' : 'CONFIRM'}
-        </button>
+        <div className="flex items-center space-x-2">
+          {/* Timer Toggle for ANY habit */}
+          {!showTimer && !isCompletedToday && !isFailedToday && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowTimer(true); }}
+              className="p-2 rounded-xl text-slate-700 hover:text-indigo-400 hover:bg-indigo-900/20 transition-all border border-transparent hover:border-indigo-500/30"
+              title="Add Timer"
+            >
+              <i className="fa-solid fa-stopwatch"></i>
+            </button>
+          )}
+
+          <button 
+            onClick={(e) => { e.stopPropagation(); deleteStage < 2 ? setDeleteStage(deleteStage + 1) : onDelete(habit.id); }}
+            className={`p-2 rounded-xl transition-all ${deleteStage === 0 ? 'text-slate-700 hover:text-red-500' : 'bg-red-900/80 text-white text-[10px] font-black'}`}
+          >
+            {deleteStage === 0 ? <i className="fa-solid fa-trash-can"></i> : deleteStage === 1 ? 'DEL?' : 'CONFIRM'}
+          </button>
+        </div>
       </div>
       
       <p className="text-xs text-slate-400 mb-6 leading-relaxed h-8 line-clamp-2 relative z-10">
@@ -81,17 +91,6 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggle, onDelete,
             {logToday.value} Hours
           </span>
         </div>
-      )}
-
-      {/* Focus Timer Trigger */}
-      {isFocusHabit && !showTimer && !isCompletedToday && !isFailedToday && (
-        <button 
-          onClick={() => setShowTimer(true)}
-          className="w-full mb-4 py-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl text-indigo-300 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-900/30 transition-all flex items-center justify-center space-x-2"
-        >
-          <i className="fa-solid fa-stopwatch"></i>
-          <span>Initialize Timer</span>
-        </button>
       )}
 
       {/* The Actual Timer Component */}

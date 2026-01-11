@@ -64,6 +64,8 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_HABITS;
   });
   
+  const [activeTab, setActiveTab] = useState<'home' | 'reports' | 'master'>('home');
+  
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
   const [prediction, setPrediction] = useState<AIPrediction | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -76,7 +78,7 @@ const App: React.FC = () => {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [apiStatus, setApiStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
-  // Oracle Chat State (Keep state but hide UI in this version)
+  // Oracle Chat State
   const [oracleQuery, setOracleQuery] = useState('');
   const [oracleResponse, setOracleResponse] = useState('');
   const [isOracleThinking, setIsOracleThinking] = useState(false);
@@ -198,11 +200,97 @@ const App: React.FC = () => {
     return <AuthScreen onAuthenticated={(u) => setUser(u)} />;
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-[fadeIn_0.5s_ease-out]">
+            <div className="lg:col-span-8 order-2 lg:order-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {habits.map(habit => (
+                  <HabitCard 
+                    key={habit.id} 
+                    habit={habit} 
+                    onToggle={(id) => setSelectionModal({show: true, habitId: id, name: habit.name})} 
+                    onDelete={(id) => setHabits(prev => prev.filter(h => h.id !== id))}
+                    onRename={() => {}}
+                  />
+                ))}
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="rounded-[2rem] p-6 border border-slate-800/60 border-dashed bg-slate-900/20 hover:bg-slate-900/40 text-slate-500 hover:text-white transition-all flex flex-col items-center justify-center min-h-[200px] group"
+                >
+                  <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                    <i className="fa-solid fa-plus text-xl"></i>
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-widest">New Protocol</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="lg:col-span-4 space-y-6 order-1 lg:order-2">
+              <AIMentor user={user} habits={habits} loading={isMentorLoading} message={mentorMessage} onConsult={handleConsultMentor} />
+              
+              <div className="bg-[#0b101a] border border-slate-800/60 p-6 rounded-[2rem]">
+                 <div className="flex items-center space-x-3 mb-4">
+                    <i className="fa-solid fa-terminal text-indigo-500"></i>
+                    <h3 className="text-slate-500 font-bold uppercase tracking-widest text-xs">Aura Terminal</h3>
+                 </div>
+                 <div className="flex gap-2">
+                   <input 
+                     value={oracleQuery} 
+                     onChange={(e) => setOracleQuery(e.target.value)} 
+                     onKeyDown={(e) => e.key === 'Enter' && handleAskOracle()}
+                     className="flex-1 bg-black border border-slate-800 text-slate-300 text-xs p-3 rounded-lg focus:outline-none focus:border-indigo-500 font-mono" 
+                     placeholder="Query Aura..." 
+                   />
+                   <button 
+                     onClick={handleAskOracle} 
+                     disabled={isOracleThinking}
+                     className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold uppercase text-xs transition-colors disabled:opacity-50"
+                   >
+                     {isOracleThinking ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Run'}
+                   </button>
+                 </div>
+                 {oracleResponse && (
+                   <div className="mt-4 p-4 bg-slate-900 border border-slate-800 rounded-lg">
+                     <p className="text-xs text-indigo-300 leading-relaxed font-mono">>> {oracleResponse}</p>
+                   </div>
+                 )}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'reports':
+        return (
+          <div className="max-w-4xl mx-auto space-y-8 animate-[fadeIn_0.5s_ease-out]">
+            <ProgressReport habits={habits} />
+            <IntensityCalendar habits={habits} />
+          </div>
+        );
+
+      case 'master':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto animate-[fadeIn_0.5s_ease-out]">
+            <div className="space-y-6">
+              <h3 className="text-slate-500 font-black uppercase tracking-[0.2em] text-xs text-center">Tactical Intelligence</h3>
+              <AIPanel insight={aiInsight} loading={isAiLoading} onRefresh={fetchInsightsAndPredictions} />
+            </div>
+            <div className="space-y-6">
+              <h3 className="text-slate-500 font-black uppercase tracking-[0.2em] text-xs text-center">Predictive Modeling</h3>
+              <PredictiveCard prediction={prediction} loading={isPredicting} />
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div className="flex items-center space-x-6">
-          <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-white text-3xl font-black shadow-2xl ring-1 ring-white/10 overflow-hidden relative">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-white text-2xl font-black shadow-2xl ring-1 ring-white/10 overflow-hidden relative">
              <i className="fa-solid fa-user-astronaut"></i>
              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-transparent"></div>
           </div>
@@ -210,12 +298,12 @@ const App: React.FC = () => {
             <div className="flex items-center space-x-2">
               {apiStatus === 'error' && <span className="text-[9px] font-black text-red-500 bg-red-950/30 px-2 py-0.5 rounded uppercase tracking-[0.2em]">Connection Lost</span>}
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tighter uppercase mt-1">
+            <h1 className="text-2xl font-black text-white tracking-tighter uppercase mt-1">
               Ghost <span className="text-indigo-500">Hardened</span>
             </h1>
-            <div className="flex items-center space-x-3 mt-3 w-56 md:w-72">
-              <span className="text-[10px] font-bold text-slate-500 w-8">LVL {user.level}</span>
-              <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="flex items-center space-x-3 mt-2 w-48">
+              <span className="text-[9px] font-bold text-slate-500 w-8">LVL {user.level}</span>
+              <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-indigo-500 transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{ width: `${(user.xp % 500) / 5}%` }}></div>
               </div>
             </div>
@@ -225,72 +313,37 @@ const App: React.FC = () => {
         <div className="flex items-center space-x-3">
           <button 
             onClick={handleLogout}
-            className="w-12 h-12 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all border border-slate-700"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all border border-slate-700"
             title="Disconnect"
           >
-            <i className="fa-solid fa-power-off"></i>
-          </button>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-white text-black px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-          >
-            Initialize
+            <i className="fa-solid fa-power-off text-xs"></i>
           </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-8">
-          {/* New Progress Report Component */}
-          <ProgressReport habits={habits} />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {habits.map(habit => (
-              <HabitCard 
-                key={habit.id} 
-                habit={habit} 
-                onToggle={(id) => setSelectionModal({show: true, habitId: id, name: habit.name})} 
-                onDelete={(id) => setHabits(prev => prev.filter(h => h.id !== id))}
-                onRename={() => {}}
-              />
-            ))}
-          </div>
-          <IntensityCalendar habits={habits} />
+      {/* Tab Navigation */}
+      <div className="flex justify-center mb-10">
+        <div className="bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800/80 flex space-x-1 backdrop-blur-sm">
+          {(['home', 'reports', 'master'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group ${
+                activeTab === tab 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <span className="relative z-10">{tab}</span>
+              {activeTab === tab && <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent"></div>}
+            </button>
+          ))}
         </div>
-        <div className="lg:col-span-4 space-y-6">
-          <AIMentor user={user} habits={habits} loading={isMentorLoading} message={mentorMessage} onConsult={handleConsultMentor} />
-          <PredictiveCard prediction={prediction} loading={isPredicting} />
-          <AIPanel insight={aiInsight} loading={isAiLoading} onRefresh={fetchInsightsAndPredictions} />
-          
-          <div className="bg-[#0b101a] border border-slate-800/60 p-6 rounded-[2rem]">
-             <div className="flex items-center space-x-3 mb-4">
-                <i className="fa-solid fa-terminal text-indigo-500"></i>
-                <h3 className="text-slate-500 font-bold uppercase tracking-widest text-xs">Command Line</h3>
-             </div>
-             <div className="flex gap-2">
-               <input 
-                 value={oracleQuery} 
-                 onChange={(e) => setOracleQuery(e.target.value)} 
-                 onKeyDown={(e) => e.key === 'Enter' && handleAskOracle()}
-                 className="flex-1 bg-black border border-slate-800 text-slate-300 text-xs p-3 rounded-lg focus:outline-none focus:border-indigo-500 font-mono" 
-                 placeholder="Query Aura..." 
-               />
-               <button 
-                 onClick={handleAskOracle} 
-                 disabled={isOracleThinking}
-                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold uppercase text-xs transition-colors disabled:opacity-50"
-               >
-                 {isOracleThinking ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Run'}
-               </button>
-             </div>
-             {oracleResponse && (
-               <div className="mt-4 p-4 bg-slate-900 border border-slate-800 rounded-lg">
-                 <p className="text-xs text-indigo-300 leading-relaxed font-mono">>> {oracleResponse}</p>
-               </div>
-             )}
-          </div>
+      </div>
 
-        </div>
+      {/* Content Area */}
+      <div className="min-h-[600px]">
+        {renderContent()}
       </div>
 
       {/* Hour Selection Modal */}
