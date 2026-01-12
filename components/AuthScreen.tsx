@@ -5,6 +5,7 @@ import {
   performGoogleHandshake, 
   performStandardLogin, 
   performAppleHandshake,
+  performGitHubHandshake,
   performPhoneLogin,
   sendPhoneOtp,
   requestPasswordReset
@@ -58,6 +59,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     try {
       const user = await performAppleHandshake();
       setHandshakeStep('Identity Confirmed.');
+      await new Promise(r => setTimeout(r, 500));
+      onAuthenticated(user);
+    } catch (e) {
+      setHandshakeStep('Handshake Failed.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    setIsLoading(true);
+    await simulateHandshake(['Contacting GitHub Hub...', 'Verifying SSH Keys...', 'Pulling User Profile...']);
+    try {
+      const user = await performGitHubHandshake();
+      setHandshakeStep('Repository Access Granted.');
       await new Promise(r => setTimeout(r, 500));
       onAuthenticated(user);
     } catch (e) {
@@ -307,7 +322,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     <div className="h-px bg-slate-800 flex-1"></div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={handleGoogleLogin}
@@ -324,6 +339,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     >
                       <i className="fa-brands fa-apple text-lg group-hover:scale-110 transition-transform"></i>
                       <span className="text-xs">Apple</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleGitHubLogin}
+                      className="bg-[#24292e] hover:bg-[#2f363d] border border-slate-700 text-white py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all active:scale-[0.98] group"
+                    >
+                      <i className="fa-brands fa-github text-lg group-hover:scale-110 transition-transform"></i>
+                      <span className="text-xs">GitHub</span>
                     </button>
                   </div>
                 </>

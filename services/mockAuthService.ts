@@ -38,6 +38,22 @@ export const performAppleHandshake = async (): Promise<UserProfile> => {
   };
 };
 
+export const performGitHubHandshake = async (): Promise<UserProfile> => {
+  // Simulate network latency for GitHub
+  await new Promise(resolve => setTimeout(resolve, 2500));
+
+  return {
+    id: 'github_' + Math.random().toString(36).substr(2, 9),
+    name: 'Octocat Agent',
+    email: 'user@github.com',
+    avatarUrl: 'https://ui-avatars.com/api/?name=GitHub+User&background=24292e&color=fff',
+    xp: 800,
+    level: 2,
+    joinedAt: new Date().toISOString(),
+    streakFreezes: 1
+  };
+};
+
 export const performStandardLogin = async (email: string): Promise<UserProfile> => {
   await new Promise(resolve => setTimeout(resolve, 1500));
   return {
